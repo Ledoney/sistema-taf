@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0f172a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Ata e Pontuação do TAF</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192x192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512x512.png" />
+<link rel="apple-touch-icon" href="icon-512x512.png" />
+<link rel="manifest" href="manifest.json" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="bar noprint">
+  <div class="logo"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.6-4A12 12 0 0112 2.9 12 12 0 013.4 6 12 12 0 003 9c0 5.6 3.8 10.3 9 11.6 5.2-1.3 9-6 9-11.6 0-1-.1-2-.4-3z"/></svg></div>
+  <div><h1>Ata do TAF</h1><p>3 provas, média mínima 7,00 para ser apto(a)</p></div>
+  <nav class="tabs" aria-label="Seções">
+    <button type="button" data-tab="lancar" class="on" onclick="switchView('lancar')">Lançar militar</button>
+    <button type="button" data-tab="ata" onclick="switchView('ata')">Ata</button>
+    <button type="button" data-tab="tabelas" onclick="switchView('tabelas')">Tabelas de pontos</button>
+  </nav>
+</header>
+
+<nav class="nav noprint" aria-label="Seções">
+  <button type="button" data-tab="lancar" class="on" onclick="switchView('lancar')"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Lançar</button>
+  <button type="button" data-tab="ata" onclick="switchView('ata')"><svg viewBox="0 0 24 24"><path d="M9 5h11M9 12h11M9 19h11M4 5h.01M4 12h.01M4 19h.01"/></svg>Ata<span id="nav-count" class="badge hidden">0</span></button>
+  <button type="button" data-tab="tabelas" onclick="switchView('tabelas')"><svg viewBox="0 0 24 24"><path d="M3 5h18v14H3zM3 10h18M9 5v14"/></svg>Tabelas</button>
+</nav>
+
+<div id="toast-container" class="noprint" aria-live="polite"></div>
+
+<div class="print-only ph1">
+  <p id="print-om">UNIDADE</p><h1 id="print-ata-titulo">ATA DE TESTE DE APTIDÃO FÍSICA (TAF)</h1><p id="print-ata-sub" style="font-weight:500"></p>
+  <div id="print-summary-bar" class="psb"></div>
+</div>
+
+<main>
+<!-- LANÇAR -->
+<div id="view-lancar" class="view on">
+<form id="taf-form" class="lancar" onsubmit="handleFormSubmit(event)" novalidate>
+  <input type="hidden" id="edit-id" value="" />
+  <section class="panel">
+    <div class="head"><div><h2 id="form-title">Novo lançamento</h2><p>Preencha os dados do militar, sua situação e o resultado das provas.</p></div></div>
+    <div id="editing-badge" class="edit hidden"><span>Você está editando um lançamento salvo.</span><button type="button" class="btn sm" onclick="resetForm(true)">Cancelar edição</button></div>
+    <div class="fs">
+      <div id="duplicate-live-warning" class="warn hidden">
+        <div><b>Este militar já está na Ata.</b><small id="duplicate-live-detail" class="blk"></small></div>
+        <button type="button" id="duplicate-live-edit-btn" class="btn sm y">Abrir registro</button>
+      </div>
+      <button type="button" class="find" onclick="openEfetivoModal()">
+        <svg viewBox="0 0 24 24"><path d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z"/></svg>
+        <span><b>Buscar no efetivo</b><small>Preenche posto, nome, matrícula, idade e sexo</small></span>
+      </button>
+      <div class="row2">
+        <div><label class="fl" for="militar-posto">Posto / Graduação</label>
+          <select id="militar-posto" class="in"><option value="">Selecione</option><option>CEL PM</option><option>TC PM</option><option>MAJ PM</option><option>CAP PM</option><option>1TEN PM</option><option>2TEN PM</option><option>ASP OF PM</option><option>ST PM</option><option>1SGT PM</option><option>2SGT PM</option><option>3SGT PM</option><option>CB PM</option><option>SD PM</option><option>AL SD PM</option></select></div>
+        <div><label class="fl" for="militar-re">Matrícula</label><input id="militar-re" class="in num" inputmode="numeric" enterkeyhint="next" placeholder="99961021" oninput="checkDuplicateLive()" /></div>
+      </div>
+      <div><label class="fl" for="militar-nome">Nome completo <i>*</i></label><input id="militar-nome" class="in" type="text" enterkeyhint="next" autocomplete="off" placeholder="Ex.: João Carlos SILVA" oninput="checkDuplicateLive()" /></div>
+
+      <div>
+        <span class="fl">Situação no TAF <i>*</i></span>
+        <div class="seg" role="radiogroup" aria-label="Situação no TAF">
+          <label><input type="radio" name="situacao-taf" value="AVALIADO" class="sr-only" onchange="onSituacaoTafChange()" checked />Avaliado</label>
+          <label><input type="radio" name="situacao-taf" value="NAO_AVALIADO" class="sr-only" onchange="onSituacaoTafChange()" />Não avaliado</label>
+          <label><input type="radio" name="situacao-taf" value="AUSENTE" class="sr-only" onchange="onSituacaoTafChange()" />Ausente</label>
+        </div>
+      </div>
+
+      <div id="nao-avaliado-box" class="note hidden">
+        <div>
+          <label class="fl" for="parecer-nao-avaliado">Parecer (Não avaliado) <i>*</i></label>
+          <select id="parecer-nao-avaliado" class="in" onchange="onParecerNaoAvaliadoChange()">
+            <option value="Disp. Esforço Físico">Disp. Esforço Físico</option>
+            <option value="LTIP">LTIP</option>
+            <option value="Férias">Férias</option>
+            <option value="Outros">Outros (especificar)</option>
+          </select>
+        </div>
+        <div id="outros-especificar-wrap" class="hidden" style="margin-top:10px">
+          <label class="fl" for="parecer-outros-detalhe">Especificar motivo (Outros) <i>*</i></label>
+          <input id="parecer-outros-detalhe" class="in" type="text" placeholder="Ex.: Caso fortuito / força maior — detalhar" oninput="recalculateLive()" />
+        </div>
+      </div>
+
+      <div id="ausente-box" class="note hidden">
+        <p style="margin:0"><strong>Parecer:</strong> AUSENTE (militar não compareceu ao TAF; registrado na seção de Ausentes da Ata).</p>
+      </div>
+
+      <div id="dados-fisicos-box" class="fs">
+        <div class="physical-meta">
+          <div class="sex-field">
+            <span class="fl">Sexo <i>*</i></span>
+            <div class="seg" role="radiogroup" aria-label="Sexo">
+              <label><input type="radio" name="sexo" value="Masculino" class="sr-only" onchange="onProtocolOrAgeChange()" checked />Masc.</label>
+              <label><input type="radio" name="sexo" value="Feminino" class="sr-only" onchange="onProtocolOrAgeChange()" />Fem.</label>
+            </div>
+          </div>
+          <div class="age-field">
+            <label class="fl" for="militar-idade">Idade <i>*</i></label>
+            <input id="militar-idade" class="in num" type="number" inputmode="numeric" min="15" max="90" enterkeyhint="next" placeholder="47" oninput="onIdadeInput()" />
+          </div>
+          <div class="faixa-row">
+            <div class="faixa" id="faixa-auto-badge">Faixa etária: automática</div>
+          </div>
+        </div>
+
+        <div id="arm-modality-box" class="note">
+          <p id="arm-modality-rule-note"></p>
+          <div class="seg" role="radiogroup" aria-label="Modalidade da 1ª prova">
+            <label id="lbl-mod-barra"><input type="radio" name="modalidade-braco" value="barra" class="sr-only" onchange="onArmModalityChange()" checked />Barra fixa</label>
+            <label id="lbl-mod-apoio"><input type="radio" name="modalidade-braco" value="apoio" id="radio-mod-apoio" class="sr-only" onchange="onArmModalityChange()" disabled />Apoio</label>
+          </div>
+        </div>
+
+        <div id="bloco-provas-avaliado">
+          <h2 style="margin-bottom:10px;font-size:20px">Resultado das provas</h2>
+          <div class="provas">
+            <div class="prova">
+              <div class="ph"><label id="lbl-prova-braco" for="prova-braco">1. Barra fixa</label><span id="pts-braco-badge" class="pts">0,0</span></div>
+              <div class="iw"><input id="prova-braco" class="in num" type="number" inputmode="numeric" min="0" max="500" enterkeyhint="next" placeholder="0" oninput="recalculateLive()" /><span class="u">rep.</span></div>
+              <p id="ref-braco" class="hint"></p>
+            </div>
+            <div class="prova">
+              <div class="ph"><label for="prova-abdominal">2. Abdominal</label><span id="pts-abdominal-badge" class="pts">0,0</span></div>
+              <div class="iw"><input id="prova-abdominal" class="in num" type="number" inputmode="numeric" min="0" max="500" enterkeyhint="next" placeholder="0" oninput="recalculateLive()" /><span class="u">rep.</span></div>
+              <p id="ref-abdominal" class="hint"></p>
+            </div>
+            <div class="prova">
+              <div class="ph"><label for="prova-corrida">3. Corrida</label><button type="button" class="mini" onclick="openCorridaCalcModal()"><svg viewBox="0 0 24 24" style="width:15px;height:15px"><path d="M9 7h6m-6 4h.01M12 11h.01M15 11h.01M9 15h.01M12 15h.01M15 15h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>Calcular voltas</button><span id="pts-corrida-badge" class="pts">0,0</span></div>
+              <div class="iw"><input id="prova-corrida" class="in num" type="number" inputmode="numeric" min="0" max="10000" enterkeyhint="next" placeholder="2400" oninput="recalculateLive()" /><span class="u">m</span></div>
+              <p id="ref-corrida" class="hint"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div><label class="fl" for="militar-obs">Observações (opcional)</label><input id="militar-obs" class="in" type="text" enterkeyhint="done" placeholder="Ex.: 2ª chamada" /></div>
+    </div>
+  </section>
+
+  <aside id="live-status-banner" class="score idle" aria-live="polite">
+    <div class="sh"><h2>Resultado</h2><span id="live-protocol-pill" class="chip"></span></div>
+    <div class="big"><div><small id="live-hero-label">Média final</small><b id="live-media-hero" class="num">0,00</b></div><strong id="live-status-text" class="num">Aguardando</strong></div>
+    <div id="live-meter-box" class="meter">
+      <div class="mt"><span>Soma <b id="live-soma-pts">0,0</b> de 30,0</span><span id="live-diff-meta"></span></div>
+      <div class="track"><i id="live-progress-bar" style="width:0%"></i><u></u></div>
+      <div class="ml"><span>0</span><span>mínimo 7,00</span><span>10</span></div>
+    </div>
+    <div id="live-breakdown-list"></div>
+  </aside>
+
+  <div class="dock noprint">
+    <div class="dm"><b id="dock-media" class="num">0,00</b><span id="dock-status">Aguardando</span></div>
+    <button type="button" class="btn" onclick="resetForm(true)">Limpar</button>
+    <button id="btn-submit" type="submit" class="btn pri">Lançar na Ata</button>
+  </div>
+</form>
+</div>
+
+<!-- ATA -->
+<div id="view-ata" class="view">
+  <section class="sum noprint" aria-label="Resumo">
+    <div><span>Avaliados</span><b id="kpi-total" class="num">0</b><span id="kpi-breakdown">0 Masc · 0 Fem</span></div>
+    <div><span>Aptos(as)</span><b id="kpi-aptos" class="num okt">0</b><span id="kpi-aptos-pct">0,0% de aprovação</span></div>
+    <div><span>Inaptos(as)</span><b id="kpi-inaptos" class="num not">0</b><span id="kpi-inaptos-pct">0,0% do efetivo</span></div>
+    <button type="button" class="kpi-btn" onclick="scrollToNaoAvaliados()" title="Ir para 2. Não avaliados">
+      <span>Não avaliados / Ausentes</span>
+      <b id="kpi-avg-media" class="num">0</b>
+      <span id="kpi-max-name">0 Não aval. · 0 Ausentes</span>
+    </button>
+    <div class="pbar" title="Proporção de aptos"><i id="kpi-bar"></i></div>
+  </section>
+
+  <details class="panel noprint">
+    <summary style="cursor:pointer;font-weight:700">Dados da Ata <small>unidade, semestre, data e comissão (aparecem na impressão)</small></summary>
+    <div class="fs" style="margin-top:14px">
+      <div><label class="fl" for="ata-om">Unidade / OM</label><input id="ata-om" class="in" oninput="saveAtaMeta()" placeholder="Ex.: BPMRv" /></div>
+      <div><span class="fl">Semestre</span><div class="seg" role="radiogroup" aria-label="Semestre">
+        <label><input type="radio" name="ata-semestre" value="1º Semestre" class="sr-only" onchange="saveAtaMeta()" />1º semestre</label>
+        <label><input type="radio" name="ata-semestre" value="2º Semestre" class="sr-only" onchange="saveAtaMeta()" checked />2º semestre</label></div></div>
+      <div class="row2">
+        <div><label class="fl" for="ata-data">Data do TAF</label><input id="ata-data" type="date" class="in" onchange="saveAtaMeta()" /></div>
+        <div><label class="fl" for="ata-comissao">Comissão avaliadora</label><input id="ata-comissao" class="in" oninput="saveAtaMeta()" placeholder="Maj Silva (Pres.), Cap Souza" /></div>
+      </div>
+      <small id="ata-saved-indicator">Salvo automaticamente neste aparelho.</small>
+    </div>
+  </details>
+
+  <section class="panel">
+    <div class="head noprint"><div><h2>Relação nominal (Avaliados)</h2><p id="records-count">0 de 0</p></div>
+      <div class="tools">
+        <button type="button" class="btn pri" onclick="exportAtaExcel()">Gerar Excel</button>
+        <button type="button" class="btn" onclick="prepareAndPrint()"><svg viewBox="0 0 24 24"><path d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>Imprimir</button>
+        <details class="more"><summary class="btn">Mais</summary>
+          <div class="menu">
+            <button type="button" class="btn" onclick="syncAtaToFirebase()">Sincronizar Ata</button>
+            <button type="button" class="btn" onclick="exportJSON()">Backup (JSON)</button>
+            <label class="btn">Importar backup<input type="file" id="import-json-input" accept=".json,application/json" onchange="importJSON(event)" class="sr-only" /></label>
+            <button type="button" class="btn danger" onclick="requestClearAll()">Limpar Ata</button>
+          </div>
+        </details>
+      </div>
+    </div>
+    <div class="filters noprint">
+      <input type="search" id="filter-search" class="in wide" oninput="renderRecordsTable()" placeholder="Buscar por nome, posto ou matrícula" aria-label="Buscar" />
+      <select id="filter-status" class="in" onchange="renderRecordsTable()" aria-label="Situação"><option value="ALL">Todas situações</option><option value="APTO">Aptos(as)</option><option value="INAPTO">Inaptos(as)</option></select>
+      <select id="filter-sexo" class="in" onchange="renderRecordsTable()" aria-label="Sexo"><option value="ALL">Todos os sexos</option><option value="Masculino">Masculino</option><option value="Feminino">Feminino</option></select>
+      <select id="filter-faixa" class="in wide" onchange="renderRecordsTable()" aria-label="Faixa etária"><option value="ALL">Todas as faixas</option><option>Até 25</option><option>26 a 30</option><option>31 a 35</option><option>36 a 40</option><option>41 a 45</option><option>46 a 50</option><option>Acima de 51</option></select>
+    </div>
+    <h3 class="print-only psec">1. Militares Avaliados</h3>
+    <div id="records-cards" class="cards"></div>
+    <div class="tw"><table class="tbl"><thead><tr><th>Ord</th><th>Posto/Grad e nome</th><th>Sexo, idade e faixa</th><th>Barra / Apoio</th><th>Abdominal</th><th>Corrida</th><th class="r">Soma</th><th class="r">Média</th><th>Situação</th><th class="noprint r">Ações</th></tr></thead><tbody id="records-tbody"></tbody></table></div>
+    <div id="records-empty" class="empty hidden"><p id="records-empty-text" style="margin:0 0 12px;font-weight:600"></p><button type="button" class="btn pri noprint" onclick="switchView('lancar')">Lançar militar</button></div>
+  </section>
+
+  <!-- SEÇÃO NÃO AVALIADOS -->
+  <section id="section-nao-avaliados" class="panel">
+    <div class="head">
+      <div>
+        <h2>2. Não avaliados</h2>
+        <p id="nao-avaliados-count">0 registro(s) — dispensa médica comprovada ou caso fortuito / força maior</p>
+      </div>
+    </div>
+    <div class="tw-always">
+      <table class="tbl tbl-parecer">
+        <thead>
+          <tr>
+            <th class="col-ord">Ord</th>
+            <th class="col-nome">Graduação + Nome completo</th>
+            <th class="col-mat">Matrícula</th>
+            <th class="col-parecer">Parecer</th>
+            <th class="noprint r col-acoes">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="nao-avaliados-tbody"></tbody>
+      </table>
+    </div>
+    <p id="nao-avaliados-empty" class="empty" style="padding:16px">Nenhum militar registrado como não avaliado.</p>
+  </section>
+
+  <!-- SEÇÃO AUSENTES -->
+  <section id="section-ausentes" class="panel">
+    <div class="head">
+      <div>
+        <h2>3. Ausentes</h2>
+        <p id="ausentes-count">0 registro(s) — não compareceram ao TAF</p>
+      </div>
+    </div>
+    <div class="tw-always">
+      <table class="tbl tbl-parecer">
+        <thead>
+          <tr>
+            <th class="col-ord">Ord</th>
+            <th class="col-nome">Graduação + Nome completo</th>
+            <th class="col-mat">Matrícula</th>
+            <th class="col-parecer">Parecer</th>
+            <th class="noprint r col-acoes">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="ausentes-tbody"></tbody>
+      </table>
+    </div>
+    <p id="ausentes-empty" class="empty" style="padding:16px">Nenhum militar registrado como ausente.</p>
+  </section>
+
+  <div class="print-only pfoot">
+    <p id="print-footer-date" style="text-align:right;margin:24px 0 0"></p>
+    <div class="sign"><div><b>Presidente da Comissão</b></div><div><b>1º Membro da Comissão</b></div><div><b>2º Membro / Secretário</b></div></div>
+  </div>
+  <button
+  type="button"
+  id="btn-topo-ata"
+  class="btn-topo-ata noprint"
+  onclick="scrollToTopoAta()"
+  aria-label="Voltar ao topo da Ata"
+  title="Voltar ao topo da Ata"
+>
+  <svg viewBox="0 0 24 24"><path d="M18 15l-6-6-6 6"/></svg>
+  <span>Topo</span>
+</button>
+</div>
+
+<!-- TABELAS -->
+<div id="view-tabelas" class="view">
+  <section class="panel">
+    <div class="head"><div><h2>Tabelas de pontos</h2><p>Células em verde valem 7,0 ou mais. Deslize para o lado para ver todas as faixas de idade.</p></div></div>
+    <div class="seg" style="max-width:420px">
+      <button id="btn-ref-masculino" type="button" class="on" onclick="setReferenceProtocol('Masculino')">Masculino</button>
+      <button id="btn-ref-feminino" type="button" onclick="setReferenceProtocol('Feminino')">Feminino</button>
+    </div>
+    <div id="reference-table-wrapper"></div>
+  </section>
+</div>
+</main>
+
+<!-- Buscar no efetivo -->
+<div id="efetivo-modal" class="modal noprint" role="dialog" aria-modal="true" aria-labelledby="efetivo-modal-title" onclick="handleModalBackdropClick(event)">
+  <div class="sheet">
+    <header><div><h2 id="efetivo-modal-title">Buscar no efetivo</h2><p>Toque no militar para preencher o formulário.</p></div>
+      <button type="button" class="x" onclick="closeEfetivoModal()" aria-label="Fechar"><svg viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg></button></header>
+    <div class="body efetivo-search-header">
+      <input type="search" id="efetivo-search-input" class="in" oninput="renderEfetivoModalList()" placeholder="Nome, nome de guerra ou matrícula" aria-label="Pesquisar" />
+      <div class="row2"><select id="efetivo-grad-filter" class="in" onchange="renderEfetivoModalList()" aria-label="Graduação"><option value="ALL">Todas graduações</option><option>CEL PM</option><option>TC PM</option><option>MAJ PM</option><option>1TEN PM</option><option>2TEN PM</option><option>ST PM</option><option>1SGT PM</option><option>2SGT PM</option><option>3SGT PM</option><option>CB PM</option><option>SD PM</option></select>
+        <small id="efetivo-result-count" style="align-self:center;text-align:right">0 encontrado(s)</small></div>
+    </div>
+    <div id="efetivo-modal-tbody"></div>
+  </div>
+</div>
+
+<!-- Calculadora de corrida -->
+<div id="corrida-calc-modal" class="modal noprint" role="dialog" aria-modal="true" aria-labelledby="corrida-calc-title" onclick="handleCorridaCalcBackdropClick(event)">
+  <div class="sheet">
+    <header><div><h2 id="corrida-calc-title">Calculadora de corrida</h2><p>Escolha a pista, as voltas completas e os metros da última volta.</p></div>
+      <button type="button" class="x" onclick="closeCorridaCalcModal()" aria-label="Fechar"><svg viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg></button></header>
+    <div class="body">
+      <div><span class="fl">Comprimento da pista</span><div class="seg">
+        <label><input type="radio" name="calc-pista" id="calc-pista-400" value="400" class="sr-only" onchange="recalculateCorridaCalc()" />400 m</label>
+        <label><input type="radio" name="calc-pista" id="calc-pista-425" value="425" class="sr-only" onchange="recalculateCorridaCalc()" checked />425 m</label></div></div>
+      <div><span class="fl">Voltas completas</span><div id="calc-grid-voltas" class="vgrid"></div></div>
+      <div><label class="fl" for="calc-volta-incompleta">Metros da volta incompleta</label><input type="number" id="calc-volta-incompleta" class="in num" inputmode="numeric" min="0" max="5000" placeholder="Ex.: 150" oninput="recalculateCorridaCalc()" /></div>
+      <div style="text-align:center"><div id="calc-distancia-total" class="num">0</div><small>metros no total</small><small id="calc-formula-resumo" class="blk"></small></div>
+    </div>
+    <footer><button type="button" class="btn" onclick="resetCorridaCalc()">Limpar</button><button type="button" class="btn pri" onclick="sendDistanciaToTafAndCopy()">Usar na prova de corrida</button></footer>
+  </div>
+</div>
+
+<!-- Aviso de duplicidade -->
+<div id="duplicate-confirm-modal" class="modal noprint" role="dialog" aria-modal="true" aria-labelledby="duplicate-modal-title">
+  <div class="sheet">
+    <header><div><h2 id="duplicate-modal-title">Militar já está na Ata</h2><p id="duplicate-modal-desc"></p></div></header>
+    <div class="body"><div class="cmp"><div><small>Já registrado</small><p id="duplicate-existing-summary"></p></div><div><small>Novo lançamento</small><p id="duplicate-new-summary"></p></div></div></div>
+    <footer><button type="button" class="btn" onclick="closeDuplicateConfirmModal()">Cancelar</button><button type="button" class="btn" onclick="confirmDuplicateKeepBoth()">Manter os dois</button><button type="button" class="btn y" onclick="confirmDuplicateOverwrite()">Substituir o existente</button></footer>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
