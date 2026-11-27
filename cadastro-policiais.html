@@ -304,7 +304,7 @@
       }
     }
 
-    async function initFirestore() {
+async function initFirestore() {
       const statusEl = document.getElementById('status-conexao');
       try {
         if (typeof firebase === 'undefined') throw new Error('SDK Firebase indisponível');
@@ -312,12 +312,32 @@
         db = app.firestore();
         statusEl.textContent = 'Efetivo BPMRv · pronto para cadastro ou edição';
         statusEl.className = 'text-xs text-emerald-400 truncate';
+
+        // Carrega o efetivo para descobrir o próximo número sequencial (efetivo_XXX)
+        const snap = await db.collection(COLECAO_EFETIVO).get();
+        if (!snap.empty) {
+          policiais = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          salvarCacheLocal();
+        }
+
         await carregarPolicialParaEdicao();
       } catch (err) {
         console.warn(err);
         statusEl.textContent = 'Sem conexão com o Firestore no momento';
         statusEl.className = 'text-xs text-amber-300 truncate';
       }
+    }
+
+    function gerarProximoIdEfetivo() {
+      let maxNum = 0;
+      policiais.forEach(p => {
+        const m = String(p.id || '').match(/^efetivo_(\d+)$/);
+        if (m) {
+          const n = parseInt(m[1], 10);
+          if (n > maxNum) maxNum = n;
+        }
+      });
+      return `efetivo_${String(maxNum + 1).padStart(3, '0')}`;
     }
 
     async function salvarPolicial(event) {
@@ -336,6 +356,7 @@
         return;
       }
 
+      const agoraIso = new Date().toISOString();
       const payload = {
         postoGraduacao,
         graduacaoRaw: postoGraduacao,
@@ -345,25 +366,32 @@
         dataNascimento,
         idade: idadeCalculada,
         sexo,
-        updatedAt: new Date().toISOString()
+        sexoSigla: sexo === 'Feminino' ? 'F' : 'M',
+        updatedAt: agoraIso
       };
 
       try {
         if (!db) throw new Error('Firestore não conectado');
 
         if (idExistente) {
-          await db.collection(COLECAO_EFETIVO).doc(idExistente).set(payload, { merge: true });
+          await db.collection(COLECAO_EFETIVO).doc(idExistente).set({
+            ...payload,
+            id: idExistente
+          }, { merge: true });
           const idx = policiais.findIndex(item => item.id === idExistente);
-          if (idx !== -1) policiais[idx] = { ...policiais[idx], ...payload };
+          if (idx !== -1) policiais[idx] = { ...policiais[idx], ...payload, id: idExistente };
           else policiais.push({ id: idExistente, ...payload });
           salvarCacheLocal();
           mostrarToast('Cadastro atualizado! Retornando ao Sistema TAF...');
         } else {
-          const docRef = await db.collection(COLECAO_EFETIVO).add({
+          const novoId = gerarProximoIdEfetivo();
+          const novoDoc = {
             ...payload,
-            createdAt: new Date().toISOString()
-          });
-          policiais.push({ id: docRef.id, ...payload });
+            id: novoId,
+            createdAt: agoraIso
+          };
+          await db.collection(COLECAO_EFETIVO).doc(novoId).set(novoDoc);
+          policiais.push(novoDoc);
           salvarCacheLocal();
           mostrarToast('Policial cadastrado! Retornando ao Sistema TAF...');
         }
@@ -374,43 +402,6 @@
       } catch (err) {
         console.error('Erro ao salvar policial:', err);
         mostrarToast('Falha ao salvar no Firestore.', 'erro');
-      }
-    }
-
-    async function excluirPolicialAtual() {
-      const idExistente = document.getElementById('doc-id').value.trim();
-      if (!idExistente) return;
-
-      const btn = document.getElementById('btn-excluir');
-      if (!confirmDeletePending) {
-        confirmDeletePending = true;
-        btn.textContent = 'Confirmar exclusão';
-        btn.className = 'w-full sm:w-auto px-3.5 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-bold transition text-center';
-        clearTimeout(confirmDeleteTimer);
-        confirmDeleteTimer = setTimeout(() => {
-          confirmDeletePending = false;
-          btn.textContent = 'Excluir policial';
-          btn.className = 'w-full sm:w-auto px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition text-center';
-        }, 4000);
-        return;
-      }
-
-      confirmDeletePending = false;
-      clearTimeout(confirmDeleteTimer);
-
-      try {
-        if (db) {
-          await db.collection(COLECAO_EFETIVO).doc(idExistente).delete();
-        }
-        policiais = policiais.filter(item => item.id !== idExistente);
-        salvarCacheLocal();
-        mostrarToast('Policial removido! Retornando ao Sistema TAF...');
-        setTimeout(() => {
-          window.location.href = './';
-        }, 900);
-      } catch (err) {
-        console.error('Erro ao excluir policial:', err);
-        mostrarToast('Erro ao excluir policial.', 'erro');
       }
     }
     
