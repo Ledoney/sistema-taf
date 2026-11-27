@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadastro de Policiais · BPMRv TAF</title>
+  <link rel="icon" href="icone-cad-pol.ico" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 bg-slate-900/75">
+  <!-- Modal centralizado seguindo o padrão visual do modal "Buscar no efetivo" -->
+  <main class="w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+    <!-- Cabeçalho escuro idêntico ao do modal do TAF -->
+    <header class="bg-[#0b1324] text-white px-5 py-4 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <img src="icone-cad-pol.ico" alt="Cadastro de Policiais" class="w-9 h-9 rounded-lg object-contain bg-white/10 p-1 shrink-0" />
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h1 id="form-titulo" class="text-base font-bold tracking-tight text-white truncate">Novo policial</h1>
+            <span id="badge-editando" class="hidden text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">
+              Editando
+            </span>
+          </div>
+          <p id="status-conexao" class="text-xs text-slate-300 truncate">Conectando ao banco do efetivo...</p>
+        </div>
+      </div>
+
+      <a href="./" title="Voltar ao Sistema TAF"
+        class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:text-white hover:bg-white/10 transition text-lg font-bold shrink-0">
+        ✕
+      </a>
+    </header>
+
+    <!-- Corpo do formulário -->
+    <form id="policial-form" onsubmit="salvarPolicial(event)" class="p-5 sm:p-6 space-y-4">
+      <input type="hidden" id="doc-id" />
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div>
+          <label for="postoGraduacao" class="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1">
+            Posto / Graduação *
+          </label>
+          <select id="postoGraduacao" required
+            class="w-full rounded-xl bg-white border border-slate-300 px-3 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15">
+            <option value="">Selecione...</option>
+            <option value="CEL PM">CEL PM</option>
+            <option value="TC PM">TC PM</option>
+            <option value="MAJ PM">MAJ PM</option>
+            <option value="CAP PM">CAP PM</option>
+            <option value="1TEN PM">1TEN PM</option>
+            <option value="2TEN PM">2TEN PM</option>
+            <option value="ASP OF PM">ASP OF PM</option>
+            <option value="ST PM">ST PM</option>
+            <option value="1SGT PM">1SGT PM</option>
+            <option value="2SGT PM">2SGT PM</option>
+            <option value="3SGT PM">3SGT PM</option>
+            <option value="CB PM">CB PM</option>
+            <option value="SD PM">SD PM</option>
+            <option value="AL SD PM">AL SD PM</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="matricula" class="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1">
+            Matrícula *
+          </label>
+          <input type="text" id="matricula" required placeholder="Ex.: 123456-7"
+            class="w-full rounded-xl bg-white border border-slate-300 px-3 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15" />
+        </div>
+      </div>
+
+      <div>
+        <label for="nome" class="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1">
+          Nome completo *
+        </label>
+        <input type="text" id="nome" required placeholder="Nome completo do militar"
+          class="w-full rounded-xl bg-white border border-slate-300 px-3 py-2.5 text-sm font-medium text-slate-900 uppercase focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15" />
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <div>
+          <label for="nomeGuerra" class="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1">
+            Nome de guerra *
+          </label>
+          <input type="text" id="nomeGuerra" required placeholder="Ex.: SILVA"
+            class="w-full rounded-xl bg-white border border-slate-300 px-3 py-2.5 text-sm font-medium text-slate-900 uppercase focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15" />
+        </div>
+
+        <div>
+          <label for="dataNascimento" class="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1">
+            Data de nascimento *
+          </label>
+          <input type="date" id="dataNascimento" required oninput="atualizarPreviewIdade()"
+            class="w-full rounded-xl bg-white border border-slate-300 px-3 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15" />
+          <p id="preview-idade" class="text-[11px] font-semibold text-emerald-700 mt-1">Idade calculada: —</p>
+        </div>
+
+        <div>
+          <label for="sexo" class="block text-xs font-bold uppercase tracking-wide text-slate-600 mb-1">
+            Sexo *
+          </label>
+          <select id="sexo" required
+            class="w-full rounded-xl bg-white border border-slate-300 px-3 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15">
+            <option value="Masculino">Masculino</option>
+            <option value="Feminino">Feminino</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Barra de ações -->
+      <div class="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
+        <div class="flex items-center gap-2">
+          <a href="./"
+            class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-300 transition">
+            Voltar ao TAF
+          </a>
+          <button type="button" id="btn-excluir" onclick="excluirPolicialAtual()"
+            class="hidden px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition">
+            Excluir policial
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2 ml-auto">
+          <button type="button" onclick="limparFormulario()"
+            class="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-300 transition">
+            Limpar
+          </button>
+          <button type="submit" id="btn-salvar"
+            class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition">
+            Salvar policial
+          </button>
+        </div>
+      </div>
+    </form>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-4 right-4 hidden px-4 py-2.5 rounded-xl text-xs font-semibold shadow-lg z-50"></div>
+
+  <script>
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyADdSGtfpY21SNo7xjJlXAu9rSLrjeBW2g",
+      authDomain: "taf-bpmrv.firebaseapp.com",
+      projectId: "taf-bpmrv",
+      storageBucket: "taf-bpmrv.firebasestorage.app",
+      messagingSenderId: "720035659679",
+      appId: "1:720035659679:web:78848a1d6c29b8c5f6c7aa"
+    };
+    const COLECAO_EFETIVO = 'taf_bpmrv_efetivo';
+    const CACHE_EFETIVO_KEY = 'taf_efetivo_cache_v1';
+
+    let db = null;
+    let policiais = [];
+    let confirmDeletePending = false;
+    let confirmDeleteTimer = null;
+
+    function mostrarToast(msg, tipo = 'ok') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = 'fixed bottom-4 right-4 px-4 py-2.5 rounded-xl text-xs font-semibold shadow-lg z-50 ' +
+        (tipo === 'erro' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white');
+      el.classList.remove('hidden');
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.classList.add('hidden'), 3200);
+    }
+
+    function parseBirthDate(val) {
+      if (!val) return null;
+      if (typeof val === 'object' && typeof val.toDate === 'function') {
+        const d = val.toDate();
+        return Number.isNaN(d.getTime()) ? null : d;
+      }
+      const str = String(val).trim();
+      if (!str) return null;
+
+      const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (isoMatch) {
+        const y = Number(isoMatch[1]);
+        const m = Number(isoMatch[2]) - 1;
+        const d = Number(isoMatch[3]);
+        const dt = new Date(y, m, d);
+        return (dt.getFullYear() === y && dt.getMonth() === m && dt.getDate() === d) ? dt : null;
+      }
+
+      const brMatch = str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (brMatch) {
+        const d = Number(brMatch[1]);
+        const m = Number(brMatch[2]) - 1;
+        const y = Number(brMatch[3]);
+        const dt = new Date(y, m, d);
+        return (dt.getFullYear() === y && dt.getMonth() === m && dt.getDate() === d) ? dt : null;
+      }
+
+      const fallback = new Date(str);
+      return Number.isNaN(fallback.getTime()) ? null : fallback;
+    }
+
+    function toIsoDateInput(val) {
+      const dt = parseBirthDate(val);
+      if (!dt) return '';
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth() + 1).padStart(2, '0');
+      const d = String(dt.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function calcularIdade(policial) {
+      const dt = parseBirthDate(policial?.dataNascimento);
+      if (dt) {
+        const hoje = new Date();
+        let idade = hoje.getFullYear() - dt.getFullYear();
+        const mesDiff = hoje.getMonth() - dt.getMonth();
+        if (mesDiff < 0 || (mesDiff === 0 && hoje.getDate() < dt.getDate())) {
+          idade--;
+        }
+        return idade >= 0 ? idade : null;
+      }
+      if (policial?.idade !== undefined && policial?.idade !== null && policial?.idade !== '') {
+        const num = Number(policial.idade);
+        return Number.isFinite(num) ? num : null;
+      }
+      return null;
+    }
+
+    function atualizarPreviewIdade() {
+      const raw = document.getElementById('dataNascimento')?.value || '';
+      const preview = document.getElementById('preview-idade');
+      if (!preview) return;
+      const idade = calcularIdade({ dataNascimento: raw });
+      preview.textContent = idade !== null ? `Idade calculada: ${idade} anos` : 'Idade calculada: —';
+    }
+
+    function carregarCacheLocal() {
+      try {
+        const raw = localStorage.getItem(CACHE_EFETIVO_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) policiais = parsed;
+        }
+      } catch (e) {}
+    }
+
+    function salvarCacheLocal() {
+      try {
+        localStorage.setItem(CACHE_EFETIVO_KEY, JSON.stringify(policiais));
+      } catch (e) {}
+    }
+
+    function preencherCamposEdicao(p) {
+      if (!p) return;
+      document.getElementById('doc-id').value = p.id || '';
+      document.getElementById('postoGraduacao').value = p.postoGraduacao || '';
+      document.getElementById('matricula').value = p.matricula || '';
+      document.getElementById('nome').value = p.nome || '';
+      document.getElementById('nomeGuerra').value = p.nomeGuerra || '';
+      document.getElementById('dataNascimento').value = toIsoDateInput(p.dataNascimento);
+      document.getElementById('sexo').value = p.sexo === 'Feminino' ? 'Feminino' : 'Masculino';
+
+      atualizarPreviewIdade();
+      document.getElementById('form-titulo').textContent = 'Editar policial';
+      document.getElementById('badge-editando').classList.remove('hidden');
+      document.getElementById('btn-salvar').textContent = 'Salvar alterações';
+      document.getElementById('btn-excluir').classList.remove('hidden');
+    }
+
+    async function carregarPolicialParaEdicao() {
+      const params = new URLSearchParams(window.location.search);
+      const editId = params.get('edit');
+      if (!editId) return;
+
+      // 1. Preenche imediatamente pelo cache local se existir
+      const localMatch = policiais.find(item => item.id === editId);
+      if (localMatch) {
+        preencherCamposEdicao(localMatch);
+      }
+
+      // 2. Busca a versão mais recente direto do Firestore pelo ID do documento
+      if (!db) return;
+      try {
+        const docSnap = await db.collection(COLECAO_EFETIVO).doc(editId).get();
+        if (docSnap.exists) {
+          preencherCamposEdicao({ id: docSnap.id, ...docSnap.data() });
+        } else if (!localMatch) {
+          mostrarToast('Policial não encontrado no banco.', 'erro');
+        }
+      } catch (err) {
+        console.error('Erro ao buscar policial para edição:', err);
+      }
+    }
+
+    async function initFirestore() {
+      const statusEl = document.getElementById('status-conexao');
+      try {
+        if (typeof firebase === 'undefined') throw new Error('SDK Firebase indisponível');
+        const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(FIREBASE_CONFIG);
+        db = app.firestore();
+        statusEl.textContent = 'Efetivo BPMRv · pronto para cadastro ou edição';
+        statusEl.className = 'text-xs text-emerald-400 truncate';
+        await carregarPolicialParaEdicao();
+      } catch (err) {
+        console.warn(err);
+        statusEl.textContent = 'Sem conexão com o Firestore no momento';
+        statusEl.className = 'text-xs text-amber-300 truncate';
+      }
+    }
+
+    async function salvarPolicial(event) {
+      event.preventDefault();
+      const idExistente = document.getElementById('doc-id').value.trim();
+      const postoGraduacao = document.getElementById('postoGraduacao').value.trim();
+      const matricula = document.getElementById('matricula').value.trim();
+      const nome = document.getElementById('nome').value.trim().toUpperCase();
+      const nomeGuerra = document.getElementById('nomeGuerra').value.trim().toUpperCase();
+      const dataNascimento = document.getElementById('dataNascimento').value.trim();
+      const sexo = document.getElementById('sexo').value;
+
+      const idadeCalculada = calcularIdade({ dataNascimento });
+      if (!dataNascimento || idadeCalculada === null) {
+        mostrarToast('Informe uma data de nascimento válida.', 'erro');
+        return;
+      }
+
+      const payload = {
+        postoGraduacao,
+        graduacaoRaw: postoGraduacao,
+        matricula,
+        nome,
+        nomeGuerra,
+        dataNascimento,
+        idade: idadeCalculada,
+        sexo,
+        updatedAt: new Date().toISOString()
+      };
+
+      try {
+        if (!db) throw new Error('Firestore não conectado');
+
+        if (idExistente) {
+          await db.collection(COLECAO_EFETIVO).doc(idExistente).set(payload, { merge: true });
+          const idx = policiais.findIndex(item => item.id === idExistente);
+          if (idx !== -1) policiais[idx] = { ...policiais[idx], ...payload };
+          else policiais.push({ id: idExistente, ...payload });
+          salvarCacheLocal();
+          mostrarToast('Cadastro atualizado! Retornando ao Sistema TAF...');
+        } else {
+          const docRef = await db.collection(COLECAO_EFETIVO).add({
+            ...payload,
+            createdAt: new Date().toISOString()
+          });
+          policiais.push({ id: docRef.id, ...payload });
+          salvarCacheLocal();
+          mostrarToast('Policial cadastrado! Retornando ao Sistema TAF...');
+        }
+
+        setTimeout(() => {
+          window.location.href = './';
+        }, 900);
+      } catch (err) {
+        console.error('Erro ao salvar policial:', err);
+        mostrarToast('Falha ao salvar no Firestore.', 'erro');
+      }
+    }
+
+    async function excluirPolicialAtual() {
+      const idExistente = document.getElementById('doc-id').value.trim();
+      if (!idExistente) return;
+
+      const btn = document.getElementById('btn-excluir');
+      if (!confirmDeletePending) {
+        confirmDeletePending = true;
+        btn.textContent = 'Confirmar exclusão';
+        btn.className = 'px-3.5 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-bold transition';
+        clearTimeout(confirmDeleteTimer);
+        confirmDeleteTimer = setTimeout(() => {
+          confirmDeletePending = false;
+          btn.textContent = 'Excluir policial';
+          btn.className = 'px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition';
+        }, 4000);
+        return;
+      }
+
+      confirmDeletePending = false;
+      clearTimeout(confirmDeleteTimer);
+
+      try {
+        if (db) {
+          await db.collection(COLECAO_EFETIVO).doc(idExistente).delete();
+        }
+        policiais = policiais.filter(item => item.id !== idExistente);
+        salvarCacheLocal();
+        mostrarToast('Policial removido! Retornando ao Sistema TAF...');
+        setTimeout(() => {
+          window.location.href = './';
+        }, 900);
+      } catch (err) {
+        console.error('Erro ao excluir policial:', err);
+        mostrarToast('Erro ao excluir policial.', 'erro');
+      }
+    }
+
+    function limparFormulario() {
+      document.getElementById('doc-id').value = '';
+      document.getElementById('policial-form').reset();
+      atualizarPreviewIdade();
+      document.getElementById('form-titulo').textContent = 'Novo policial';
+      document.getElementById('badge-editando').classList.add('hidden');
+      document.getElementById('btn-salvar').textContent = 'Salvar policial';
+      document.getElementById('btn-excluir').classList.add('hidden');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      carregarCacheLocal();
+      carregarPolicialParaEdicao();
+      initFirestore();
+    });
+  </script>
+</body>
+</html>
