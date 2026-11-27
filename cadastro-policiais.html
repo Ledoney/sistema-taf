@@ -152,7 +152,7 @@
   
   <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 sm:left-auto sm:right-4 sm:translate-x-0 w-[calc(100%-2rem)] max-w-sm sm:w-auto text-center sm:text-left hidden px-4 py-2.5 rounded-xl text-xs font-semibold shadow-lg z-50"></div>
   
-  <script>
+<script>
     const FIREBASE_CONFIG = {
       apiKey: "AIzaSyADdSGtfpY21SNo7xjJlXAu9rSLrjeBW2g",
       authDomain: "taf-bpmrv.firebaseapp.com",
@@ -179,7 +179,7 @@
       clearTimeout(el._t);
       el._t = setTimeout(() => el.classList.add('hidden'), 3200);
     }
-    
+
     function parseBirthDate(val) {
       if (!val) return null;
       if (typeof val === 'object' && typeof val.toDate === 'function') {
@@ -284,13 +284,11 @@
       const editId = params.get('edit');
       if (!editId) return;
 
-      // 1. Preenche imediatamente pelo cache local se existir
       const localMatch = policiais.find(item => item.id === editId);
       if (localMatch) {
         preencherCamposEdicao(localMatch);
       }
 
-      // 2. Busca a versão mais recente direto do Firestore pelo ID do documento
       if (!db) return;
       try {
         const docSnap = await db.collection(COLECAO_EFETIVO).doc(editId).get();
@@ -304,7 +302,7 @@
       }
     }
 
-async function initFirestore() {
+    async function initFirestore() {
       const statusEl = document.getElementById('status-conexao');
       try {
         if (typeof firebase === 'undefined') throw new Error('SDK Firebase indisponível');
@@ -313,7 +311,6 @@ async function initFirestore() {
         statusEl.textContent = 'Efetivo BPMRv · pronto para cadastro ou edição';
         statusEl.className = 'text-xs text-emerald-400 truncate';
 
-        // Carrega o efetivo para descobrir o próximo número sequencial (efetivo_XXX)
         const snap = await db.collection(COLECAO_EFETIVO).get();
         if (!snap.empty) {
           policiais = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -325,6 +322,7 @@ async function initFirestore() {
         console.warn(err);
         statusEl.textContent = 'Sem conexão com o Firestore no momento';
         statusEl.className = 'text-xs text-amber-300 truncate';
+        await carregarPolicialParaEdicao();
       }
     }
 
@@ -404,7 +402,44 @@ async function initFirestore() {
         mostrarToast('Falha ao salvar no Firestore.', 'erro');
       }
     }
-    
+
+    async function excluirPolicialAtual() {
+      const idExistente = document.getElementById('doc-id').value.trim();
+      if (!idExistente) return;
+
+      const btn = document.getElementById('btn-excluir');
+      if (!confirmDeletePending) {
+        confirmDeletePending = true;
+        btn.textContent = 'Confirmar exclusão';
+        btn.className = 'w-full sm:w-auto px-3.5 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-bold transition text-center';
+        clearTimeout(confirmDeleteTimer);
+        confirmDeleteTimer = setTimeout(() => {
+          confirmDeletePending = false;
+          btn.textContent = 'Excluir policial';
+          btn.className = 'w-full sm:w-auto px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition text-center';
+        }, 4000);
+        return;
+      }
+
+      confirmDeletePending = false;
+      clearTimeout(confirmDeleteTimer);
+
+      try {
+        if (db) {
+          await db.collection(COLECAO_EFETIVO).doc(idExistente).delete();
+        }
+        policiais = policiais.filter(item => item.id !== idExistente);
+        salvarCacheLocal();
+        mostrarToast('Policial removido! Retornando ao Sistema TAF...');
+        setTimeout(() => {
+          window.location.href = './';
+        }, 900);
+      } catch (err) {
+        console.error('Erro ao excluir policial:', err);
+        mostrarToast('Erro ao excluir policial.', 'erro');
+      }
+    }
+
     function limparFormulario() {
       document.getElementById('doc-id').value = '';
       document.getElementById('policial-form').reset();
@@ -417,7 +452,6 @@ async function initFirestore() {
 
     document.addEventListener('DOMContentLoaded', () => {
       carregarCacheLocal();
-      carregarPolicialParaEdicao();
       initFirestore();
     });
   </script>
