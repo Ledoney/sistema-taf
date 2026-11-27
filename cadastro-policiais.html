@@ -150,7 +150,8 @@
   
   <!-- Toast -->
   
-  <div id="toast" class="fixed bottom-4 right-4 hidden px-4 py-2.5 rounded-xl text-xs font-semibold shadow-lg z-50"></div>
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 sm:left-auto sm:right-4 sm:translate-x-0 w-[calc(100%-2rem)] max-w-sm sm:w-auto text-center sm:text-left hidden px-4 py-2.5 rounded-xl text-xs font-semibold shadow-lg z-50"></div>
+  
   <script>
     const FIREBASE_CONFIG = {
       apiKey: "AIzaSyADdSGtfpY21SNo7xjJlXAu9rSLrjeBW2g",
@@ -171,13 +172,14 @@
     function mostrarToast(msg, tipo = 'ok') {
       const el = document.getElementById('toast');
       el.textContent = msg;
-      el.className = 'fixed bottom-4 right-4 px-4 py-2.5 rounded-xl text-xs font-semibold shadow-lg z-50 ' +
-        (tipo === 'erro' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white');
+      const basePos = 'fixed bottom-4 left-1/2 -translate-x-1/2 sm:left-auto sm:right-4 sm:translate-x-0 w-[calc(100%-2rem)] max-w-sm sm:w-auto text-center sm:text-left px-4 py-2.5 rounded-xl text-xs font-semibold shadow-lg z-50 ';
+      const cor = tipo === 'erro' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white';
+      el.className = basePos + cor;
       el.classList.remove('hidden');
       clearTimeout(el._t);
       el._t = setTimeout(() => el.classList.add('hidden'), 3200);
     }
-
+    
     function parseBirthDate(val) {
       if (!val) return null;
       if (typeof val === 'object' && typeof val.toDate === 'function') {
