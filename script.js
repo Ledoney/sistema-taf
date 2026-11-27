@@ -1196,6 +1196,24 @@ function getPostoRank(posto) {
   return POSTO_SENIORITY_RANK[key] ?? 999;
 }
 
+function sortEfetivoBySeniority(lista) {
+      return lista.slice().sort((a, b) => {
+        const rankA = getPostoRank(a.postoGraduacao || a.graduacaoRaw);
+        const rankB = getPostoRank(b.postoGraduacao || b.graduacaoRaw);
+        if (rankA !== rankB) return rankA - rankB;
+
+        const idA = String(a.id || '');
+        const idB = String(b.id || '');
+        const isEfA = idA.startsWith('efetivo_');
+        const isEfB = idB.startsWith('efetivo_');
+        if (isEfA && isEfB && idA !== idB) {
+          return idA.localeCompare(idB, 'pt-BR', { numeric: true });
+        }
+
+        return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
+      });
+    }
+
     function compareRecordsBySeniority(a, b) {
       const rankA = getPostoRank(a.posto);
       const rankB = getPostoRank(b.posto);
@@ -1774,14 +1792,14 @@ function getPostoRank(posto) {
       }
     }
 
-    async function loadEfetivoFromFirestore() {
+async function loadEfetivoFromFirestore() {
       if (!firebaseConnected || !dbFirestore) return;
       try {
         const snap = await dbFirestore.collection(EFETIVO_COLLECTION_NAME).get();
         if (!snap.empty) {
-          efetivoList = snap.docs
-            .map(d => ({ id: d.id, ...d.data() }))
-            .sort((a, b) => String(a.id || '').localeCompare(String(b.id || ''), 'pt-BR'));
+          efetivoList = sortEfetivoBySeniority(
+            snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          );
           saveEfetivoCache();
         }
       } catch (err) {
@@ -1955,7 +1973,7 @@ function renderEfetivoModalList() {
       const box = document.getElementById('efetivo-modal-tbody');
       const countEl = document.getElementById('efetivo-result-count');
 
-      const filtered = efetivoList.filter(p => {
+      const filtered = sortEfetivoBySeniority(efetivoList).filter(p => {
         if (gradFilter !== 'ALL' && p.postoGraduacao !== gradFilter) return false;
         if (!q) return true;
         const idadeCalc = calcularIdadeEfetivo(p);
