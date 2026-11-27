@@ -11,7 +11,7 @@
       messagingSenderId: "720035659679",
       appId: "1:720035659679:web:78848a1d6c29b8c5f6c7aa"
     };
-    const ATA_COLLECTION_NAME = 'taf_bpmrv_ata_Lancamentos';
+    const ATA_COLLECTION_NAME = 'taf_bpmrv_ata_lancamentos';
     const EFETIVO_COLLECTION_NAME = 'taf_bpmrv_efetivo';
     const FB_EFETIVO_CACHE_KEY = 'taf_efetivo_cache_v1';
 
