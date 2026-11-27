@@ -15,7 +15,9 @@
       color: #0f172a;
     }
   </style>
+  
 </head>
+  
 <body class="min-h-screen flex items-center justify-center p-4 bg-slate-900/75">
   <!-- Modal centralizado seguindo o padrão visual do modal "Buscar no efetivo" -->
   <main class="w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
@@ -403,7 +405,7 @@
       }
     }
 
-    async function excluirPolicialAtual() {
+async function excluirPolicialAtual() {
       const idExistente = document.getElementById('doc-id').value.trim();
       if (!idExistente) return;
 
