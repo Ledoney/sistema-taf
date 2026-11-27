@@ -116,28 +116,33 @@
         </div>
       </div>
 
-      <!-- Barra de ações -->
-      <div class="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2.5">
-        <div class="flex items-center gap-2">
-          <a href="./"
-            class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-300 transition">
-            Voltar ao TAF
-          </a>
+<!-- Barra de ações responsiva -->
+      <div class="pt-4 mt-2 border-t border-slate-200 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2.5">
+        <!-- Ação destrutiva (só aparece ao editar) -->
+        <div class="flex items-center justify-center sm:justify-start">
           <button type="button" id="btn-excluir" onclick="excluirPolicialAtual()"
-            class="hidden px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition">
+            class="hidden w-full sm:w-auto px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition text-center">
             Excluir policial
           </button>
         </div>
 
-        <div class="flex items-center gap-2 ml-auto">
-          <button type="button" onclick="limparFormulario()"
-            class="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-300 transition">
-            Limpar
-          </button>
+        <!-- Ações principais: no mobile "Salvar alterações" fica em cima em destaque -->
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <button type="submit" id="btn-salvar"
-            class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition">
+            class="order-1 sm:order-3 w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition text-center">
             Salvar policial
           </button>
+
+          <div class="order-2 sm:order-1 grid grid-cols-2 sm:flex items-center gap-2">
+            <a href="./"
+              class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-300 transition text-center">
+              Voltar ao TAF
+            </a>
+            <button type="button" onclick="limparFormulario()"
+              class="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-300 transition text-center">
+              Limpar
+            </button>
+          </div>
         </div>
       </div>
     </form>
