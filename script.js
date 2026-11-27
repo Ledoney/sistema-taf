@@ -1274,10 +1274,10 @@
       }
       empty.classList.add('hidden');
 
-      const cell = (val, pts, unit, pre = '') => val === null || val === undefined
+        const cell = (val, pts, unit, pre = '') => val === null || val === undefined
         ? '<span class="mut">—</span>'
-        : `<div class="tc">${pre ? `<small>${pre}</small>` : ''}<b class="num">${val}${unit}</b><em class="${pts >= 7 ? 'g' : ''}">Nota ${formatPt(pts, 1)}</em></div>`;
-
+        : `<div class="tc">${pre ? `<small>${pre}</small>` : ''}<b class="num" style="white-space:nowrap;">${val}${unit}</b><em class="${pts >= 7 ? 'g' : ''}" style="white-space:nowrap;display:inline-block;">Nota ${formatPt(pts, 1)}</em></div>`;
+        
       const rows = [], list = [];
       filtered.forEach((r, i) => {
         const full = escapeHtml(`${r.posto ? r.posto + ' ' : ''}${r.nome}`);
