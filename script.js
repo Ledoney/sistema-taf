@@ -1286,7 +1286,9 @@
         const st = r.isApto ? 'ok' : 'no';
         const mod = r.modalidadeBraco === 'barra' ? 'Barra fixa' : 'Apoio';
         const p = r.pontuacoes || {};
-        const c1 = cell(r.bracoValor, p.braco ?? 0, ' rep.', mod), c2 = cell(r.abdominal, p.abdominal ?? 0, ' rep.'), c3 = cell(r.corrida, p.corrida ?? 0, 'm');
+        const c1 = cell(r.bracoValor, p.braco ?? 0, ' rep.', mod),
+              c2 = cell(r.abdominal, p.abdominal ?? 0, ' rep.', 'Abdominal'),
+              c3 = cell(r.corrida, p.corrida ?? 0, 'm', 'Corrida');
         const idx = String(i + 1).padStart(2, '0');
         const info = `${mat ? 'Mat. ' + escapeHtml(mat) : ''}${mat && r.obs ? ', ' : ''}${r.obs ? escapeHtml(r.obs) : ''}`;
         const acts = `<button type="button" class="btn sm" onclick="editRecord('${r.id}')">Editar</button>` +
