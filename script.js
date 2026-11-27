@@ -1172,27 +1172,29 @@
       }
     }
 
-    const POSTO_SENIORITY_RANK = {
-      'CEL PM': 1,
-      'TC PM': 2,
-      'MAJ PM': 3,
-      'CAP PM': 4,
-      '1TEN PM': 5,
-      '2TEN PM': 6,
-      'ASP OF PM': 7,
-      'ST PM': 8,
-      '1SGT PM': 9,
-      '2SGT PM': 10,
-      '3SGT PM': 11,
-      'CB PM': 12,
-      'SD PM': 13,
-      'AL SD PM': 14
-    };
+const POSTO_SENIORITY_RANK = {
+  'CELPM': 1, 'CEL': 1,
+  'TCPM': 2, 'TC': 2,
+  'MAJPM': 3, 'MAJ': 3,
+  'CAPPM': 4, 'CAP': 4,
+  '1TENPM': 5, '1TEN': 5,
+  '2TENPM': 6, '2TEN': 6,
+  'ASPOFPM': 7, 'ASP': 7,
+  'STPM': 8, 'ST': 8,
+  '1SGTPM': 9, '1SGT': 9,
+  '2SGTPM': 10, '2SGT': 10,
+  '3SGTPM': 11, '3SGT': 11,
+  'CBPM': 12, 'CB': 12,
+  'SDPM': 13, 'SD': 13,
+  'ALSDPM': 14, 'ALSD': 14
+};
 
-    function getPostoRank(posto) {
-      const normalized = String(posto || '').trim().toUpperCase();
-      return POSTO_SENIORITY_RANK[normalized] ?? 999;
-    }
+function getPostoRank(posto) {
+  const key = String(posto || '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
+  return POSTO_SENIORITY_RANK[key] ?? 999;
+}
 
     function compareRecordsBySeniority(a, b) {
       const rankA = getPostoRank(a.posto);
