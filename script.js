@@ -1978,7 +1978,7 @@ function renderEfetivoModalList() {
         ).includes(q);
       });
 
-    const addBtnHtml = `
+const addBtnHtml = `
         <button type="button" class="btn sm" onclick="irParaCadastroPolicial(event)"
           style="display:inline-flex;align-items:center;gap:5px;background:#eff6ff;border:1px solid #93c5fd;color:#1e3a8a;font-weight:700;padding:5px 8px;border-radius:8px;font-size:11px;line-height:1.1;white-space:nowrap;box-shadow:0 1px 2px rgba(15,23,42,0.06);">
           <img src="icone-cad-pol.ico" alt="" style="width:14px;height:14px;object-fit:contain;border-radius:3px;flex-shrink:0;" />
@@ -2000,12 +2000,9 @@ function renderEfetivoModalList() {
         }
         addSlot.innerHTML = addBtnHtml;
       }
-    
-        const mostrarBotaoTopo = filtered.length === 0 && (q.length > 0 || gradFilter !== 'ALL');
-        addSlot.innerHTML = mostrarBotaoTopo ? addBtnHtml : '';
-      }
 
       if (!box) return;
+    
       if (!filtered.length) {
         box.innerHTML = `<p class="empty">Nenhum policial encontrado com o filtro informado.</p>`;
         return;
