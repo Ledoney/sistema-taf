@@ -348,7 +348,45 @@
       return `efetivo_${String(maxNum + 1).padStart(3, '0')}`;
     }
 
-    async function salvarPolicial(event) {
+  function normalizarTextoSimples(str) {
+      return String(str || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+    }
+
+    async function buscarDuplicadoNoEfetivo(matricula, nome) {
+      const matLimpa = String(matricula || '').trim().toLowerCase();
+      const nomeLimpo = normalizarTextoSimples(nome);
+
+      let match = policiais.find(p => {
+        const pMat = String(p.matricula || '').trim().toLowerCase();
+        const pNome = normalizarTextoSimples(p.nome);
+        return (matLimpa && pMat && pMat === matLimpa) || (nomeLimpo && pNome && pNome === nomeLimpo);
+      });
+      if (match) return match;
+
+      if (db && matLimpa) {
+        try {
+          const snapMat = await db.collection(COLECAO_EFETIVO)
+            .where('matricula', '==', String(matricula || '').trim())
+            .limit(1)
+            .get();
+          if (!snapMat.empty) {
+            const d = snapMat.docs[0];
+            return { id: d.id, ...d.data() };
+          }
+        } catch (err) {
+          console.warn('Não foi possível consultar duplicidade no Firestore:', err);
+        }
+      }
+
+      return null;
+    }
+  
+async function salvarPolicial(event) {
       event.preventDefault();
       const idExistente = document.getElementById('doc-id').value.trim();
       const postoGraduacao = document.getElementById('postoGraduacao').value.trim();
@@ -394,6 +432,13 @@
           salvarCacheLocal();
           mostrarToast('Cadastro atualizado! Retornando ao Sistema TAF...');
         } else {
+          const duplicado = await buscarDuplicadoNoEfetivo(matricula, nome);
+          if (duplicado) {
+            const ident = `${duplicado.postoGraduacao || ''} ${duplicado.nome || ''}`.trim();
+            mostrarToast(`Já existe cadastro para ${ident} (Mat. ${duplicado.matricula || matricula}).`, 'erro');
+            return;
+          }
+
           const novoId = gerarProximoIdEfetivo();
           const novoDoc = {
             ...payload,
@@ -414,8 +459,8 @@
         mostrarToast('Falha ao salvar no Firestore.', 'erro');
       }
     }
-
-async function excluirPolicialAtual() {
+  
+  async function excluirPolicialAtual() {
       const idExistente = document.getElementById('doc-id').value.trim();
       if (!idExistente) return;
 
