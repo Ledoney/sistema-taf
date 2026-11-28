@@ -240,6 +240,14 @@
       return null;
     }
 
+  function calcularDataNascimentoSerial(dataIso) {
+      const dt = parseBirthDate(dataIso);
+      if (!dt) return null;
+      const utcDate = Date.UTC(dt.getFullYear(), dt.getMonth(), dt.getDate());
+      const excelEpoch = Date.UTC(1899, 11, 30);
+      return Math.round((utcDate - excelEpoch) / 86400000);
+    }
+
     function atualizarPreviewIdade() {
       const raw = document.getElementById('dataNascimento')?.value || '';
       const preview = document.getElementById('preview-idade');
@@ -357,6 +365,7 @@
       }
 
       const agoraIso = new Date().toISOString();
+      const dataNascimentoSerial = calcularDataNascimentoSerial(dataNascimento);
       const payload = {
         postoGraduacao,
         graduacaoRaw: postoGraduacao,
@@ -364,6 +373,7 @@
         nome,
         nomeGuerra,
         dataNascimento,
+        dataNascimentoSerial,
         idade: idadeCalculada,
         sexo,
         sexoSigla: sexo === 'Feminino' ? 'F' : 'M',
