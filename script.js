@@ -1210,11 +1210,7 @@ function sortEfetivoBySeniority(lista) {
   });
 }
 
-        return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
-      });
-    }
-
-    function compareRecordsBySeniority(a, b) {
+function compareRecordsBySeniority(a, b) {
       const rankA = getPostoRank(a.posto);
       const rankB = getPostoRank(b.posto);
       if (rankA !== rankB) return rankA - rankB;
@@ -1751,7 +1747,7 @@ function sortEfetivoBySeniority(lista) {
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) {
-            efetivoList = parsed;
+            efetivoList = sortEfetivoBySeniority(parsed);
             return;
           }
         }
