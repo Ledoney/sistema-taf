@@ -1978,37 +1978,32 @@ function renderEfetivoModalList() {
         ).includes(q);
       });
 
-const addBtnHtml = `
+        const addBtnHtml = `
         <button type="button" class="btn sm" onclick="irParaCadastroPolicial(event)"
-          style="display:inline-flex;align-items:center;gap:6px;background:#eff6ff;border:1px solid #93c5fd;color:#1e3a8a;font-weight:700;padding:6px 11px;border-radius:9px;font-size:12px;line-height:1.15;white-space:nowrap;box-shadow:0 1px 2px rgba(15,23,42,0.06);">
+          style="display:inline-flex;align-items:center;gap:6px;background:#eff6ff;border:1px solid #93c5fd;color:#1e3a8a;font-weight:700;padding:7px 12px;border-radius:9px;font-size:12px;line-height:1.15;white-space:nowrap;box-shadow:0 1px 2px rgba(15,23,42,0.06);">
           <img src="icone-cad-pol.ico" alt="" style="width:16px;height:16px;object-fit:contain;border-radius:3px;flex-shrink:0;" />
           <span>+ Policial</span>
         </button>`;
 
-      if (countEl) {
-        countEl.textContent = `${filtered.length} encontrado(s)`;
-        countEl.style.whiteSpace = 'nowrap';
-        countEl.style.fontSize = '11.5px';
+          if (countEl) {
+            countEl.textContent = `${filtered.length} encontrado(s)`;
+            countEl.style.whiteSpace = 'nowrap';
+            countEl.style.fontSize = '12px';
+          }
 
-        const parentRow = countEl.parentElement;
-        if (parentRow) {
-          parentRow.style.display = 'flex';
-          parentRow.style.flexWrap = 'wrap';
-          parentRow.style.alignItems = 'center';
-          parentRow.style.justifyContent = 'space-between';
-          parentRow.style.gap = '6px';
-        }
-
+      const gradSelect = document.getElementById('efetivo-grad-filter');
+      if (gradSelect) {
         let addSlot = document.getElementById('efetivo-add-slot');
         if (!addSlot) {
-          addSlot = document.createElement('span');
+          addSlot = document.createElement('div');
           addSlot.id = 'efetivo-add-slot';
-          addSlot.style.display = 'inline-flex';
-          addSlot.style.alignItems = 'center';
-          countEl.insertAdjacentElement('afterend', addSlot);
+          gradSelect.insertAdjacentElement('afterend', addSlot);
         }
-        addSlot.style.marginLeft = '0';
-        addSlot.style.marginTop = '4px';
+        addSlot.style.display = 'flex';
+        addSlot.style.alignItems = 'center';
+        addSlot.style.justifyContent = 'flex-start';
+        addSlot.style.marginTop = '6px';
+        addSlot.style.marginBottom = '2px';
         addSlot.innerHTML = addBtnHtml;
       }
 
