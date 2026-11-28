@@ -1197,18 +1197,18 @@ function getPostoRank(posto) {
 }
 
 function sortEfetivoBySeniority(lista) {
-      return lista.slice().sort((a, b) => {
-        const rankA = getPostoRank(a.postoGraduacao || a.graduacaoRaw);
-        const rankB = getPostoRank(b.postoGraduacao || b.graduacaoRaw);
-        if (rankA !== rankB) return rankA - rankB;
+  if (!Array.isArray(lista)) return [];
+  return lista.slice().sort((a, b) => {
+    const rankA = getPostoRank(a.postoGraduacao || a.graduacaoRaw);
+    const rankB = getPostoRank(b.postoGraduacao || b.graduacaoRaw);
+    if (rankA !== rankB) return rankA - rankB;
 
-        const idA = String(a.id || '');
-        const idB = String(b.id || '');
-        const isEfA = idA.startsWith('efetivo_');
-        const isEfB = idB.startsWith('efetivo_');
-        if (isEfA && isEfB && idA !== idB) {
-          return idA.localeCompare(idB, 'pt-BR', { numeric: true });
-        }
+    const cmpNome = String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
+    if (cmpNome !== 0) return cmpNome;
+
+    return String(a.id || '').localeCompare(String(b.id || ''), 'pt-BR', { numeric: true });
+  });
+}
 
         return String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
       });
