@@ -1978,18 +1978,12 @@ function renderEfetivoModalList() {
         ).includes(q);
       });
 
-        const addBtnHtml = `
+const addBtnHtml = `
         <button type="button" class="btn sm" onclick="irParaCadastroPolicial(event)"
           style="display:inline-flex;align-items:center;gap:6px;background:#eff6ff;border:1px solid #93c5fd;color:#1e3a8a;font-weight:700;padding:7px 12px;border-radius:9px;font-size:12px;line-height:1.15;white-space:nowrap;box-shadow:0 1px 2px rgba(15,23,42,0.06);">
           <img src="icone-cad-pol.ico" alt="" style="width:16px;height:16px;object-fit:contain;border-radius:3px;flex-shrink:0;" />
           <span>+ Policial</span>
         </button>`;
-
-          if (countEl) {
-            countEl.textContent = `${filtered.length} encontrado(s)`;
-            countEl.style.whiteSpace = 'nowrap';
-            countEl.style.fontSize = '12px';
-          }
 
       const gradSelect = document.getElementById('efetivo-grad-filter');
       if (gradSelect) {
@@ -2001,10 +1995,21 @@ function renderEfetivoModalList() {
         }
         addSlot.style.display = 'flex';
         addSlot.style.alignItems = 'center';
-        addSlot.style.justifyContent = 'flex-start';
-        addSlot.style.marginTop = '6px';
-        addSlot.style.marginBottom = '2px';
+        addSlot.style.justifyContent = 'space-between';
+        addSlot.style.gap = '8px';
+        addSlot.style.width = '100%';
+        addSlot.style.marginTop = '8px';
+        addSlot.style.marginBottom = '4px';
         addSlot.innerHTML = addBtnHtml;
+
+        if (countEl) {
+          countEl.textContent = `${filtered.length} encontrado(s)`;
+          countEl.style.whiteSpace = 'nowrap';
+          countEl.style.fontSize = '12px';
+          addSlot.appendChild(countEl);
+        }
+      } else if (countEl) {
+        countEl.textContent = `${filtered.length} encontrado(s)`;
       }
 
       if (!box) return;
