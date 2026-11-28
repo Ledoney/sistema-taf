@@ -1980,24 +1980,35 @@ function renderEfetivoModalList() {
 
 const addBtnHtml = `
         <button type="button" class="btn sm" onclick="irParaCadastroPolicial(event)"
-          style="display:inline-flex;align-items:center;gap:5px;background:#eff6ff;border:1px solid #93c5fd;color:#1e3a8a;font-weight:700;padding:5px 8px;border-radius:8px;font-size:11px;line-height:1.1;white-space:nowrap;box-shadow:0 1px 2px rgba(15,23,42,0.06);">
-          <img src="icone-cad-pol.ico" alt="" style="width:14px;height:14px;object-fit:contain;border-radius:3px;flex-shrink:0;" />
+          style="display:inline-flex;align-items:center;gap:6px;background:#eff6ff;border:1px solid #93c5fd;color:#1e3a8a;font-weight:700;padding:6px 11px;border-radius:9px;font-size:12px;line-height:1.15;white-space:nowrap;box-shadow:0 1px 2px rgba(15,23,42,0.06);">
+          <img src="icone-cad-pol.ico" alt="" style="width:16px;height:16px;object-fit:contain;border-radius:3px;flex-shrink:0;" />
           <span>+ Policial</span>
         </button>`;
 
       if (countEl) {
         countEl.textContent = `${filtered.length} encontrado(s)`;
         countEl.style.whiteSpace = 'nowrap';
-        countEl.style.fontSize = '11px';
+        countEl.style.fontSize = '11.5px';
+
+        const parentRow = countEl.parentElement;
+        if (parentRow) {
+          parentRow.style.display = 'flex';
+          parentRow.style.flexWrap = 'wrap';
+          parentRow.style.alignItems = 'center';
+          parentRow.style.justifyContent = 'space-between';
+          parentRow.style.gap = '6px';
+        }
+
         let addSlot = document.getElementById('efetivo-add-slot');
         if (!addSlot) {
           addSlot = document.createElement('span');
           addSlot.id = 'efetivo-add-slot';
           addSlot.style.display = 'inline-flex';
           addSlot.style.alignItems = 'center';
-          addSlot.style.marginLeft = '6px';
           countEl.insertAdjacentElement('afterend', addSlot);
         }
+        addSlot.style.marginLeft = '0';
+        addSlot.style.marginTop = '4px';
         addSlot.innerHTML = addBtnHtml;
       }
 
